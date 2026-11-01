@@ -1,0 +1,491 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String          @id @default(cuid())
+  name         String
+  email        String?         @unique
+  identifier   String          @unique // Admission No / Staff ID / Username
+  password     String
+  role         String          @default("STUDENT") // ADMIN, TEACHER, STUDENT, PARENT
+  phone        String?
+  avatar       String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  studentProfile StudentProfile?
+  teacherProfile TeacherProfile?
+  parentProfile  ParentProfile?
+  announcements  Announcement[]
+}
+
+model StudentProfile {
+  id              String            @id @default(cuid())
+  userId          String            @unique
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rollNumber      String
+  admissionNumber String            @unique
+  gender          String?
+  dateOfBirth     DateTime?
+  bloodGroup      String?
+  address         String?
+  sectionId       String
+  section         Section           @relation(fields: [sectionId], references: [id])
+  parentId        String?
+  parent          ParentProfile?    @relation(fields: [parentId], references: [id])
+
+  attendance      AttendanceRecord[]
+  marks           MarkRecord[]
+  invoices        FeeInvoice[]
+  submissions     AssignmentSubmission[]
+  transport       StudentTransport?
+}
+
+model TeacherProfile {
+  id              String            @id @default(cuid())
+  userId          String            @unique
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  employeeId      String            @unique
+  designation     String?           // e.g., "Senior Mathematics Faculty"
+  qualification   String?
+  specialization  String?
+  joiningDate     DateTime?
+  salary          Float?
+
+  classTeacherOf  Section?          @relation("ClassTeacher")
+  assignedSubjects SubjectTeacher[]
+  timetableSlots  TimetableSlot[]
+  assignments     Assignment[]
+}
+
+model ParentProfile {
+  id           String           @id @default(cuid())
+  userId       String           @unique
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  occupation   String?
+  relationship String?          // Father, Mother, Guardian
+
+  students     StudentProfile[]
+}
+
+model ClassLevel {
+  id       String    @id @default(cuid())
+  name     String    @unique // "Grade 1", "Grade 2", etc.
+  code     String    @unique // "G1", "G2"
+  order    Int       @default(1)
+
+  sections Section[]
+  subjects Subject[]
+}
+
+model Section {
+  id             String            @id @default(cuid())
+  name           String            // "A", "B", etc.
+  classLevelId   String
+  classLevel     ClassLevel        @relation(fields: [classLevelId], references: [id], onDelete: Cascade)
+  classTeacherId String?           @unique
+  classTeacher   TeacherProfile?   @relation("ClassTeacher", fields: [classTeacherId], references: [id])
+
+  students       StudentProfile[]
+  subjectTeachers SubjectTeacher[]
+  attendanceRecords AttendanceRecord[]
+  timetableSlots TimetableSlot[]
+  assignments    Assignment[]
+  learningMaterials LearningMaterial[]
+}
+
+model Subject {
+  id             String            @id @default(cuid())
+  name           String            // "Mathematics", "English", "Science"
+  code           String            // "MTH101", "ENG101"
+  classLevelId   String
+  classLevel     ClassLevel        @relation(fields: [classLevelId], references: [id], onDelete: Cascade)
+  totalMarks     Float             @default(100)
+  passMarks      Float             @default(40)
+
+  subjectTeachers SubjectTeacher[]
+  examSubjects   ExamSubject[]
+  timetableSlots TimetableSlot[]
+  assignments    Assignment[]
+  learningMaterials LearningMaterial[]
+}
+
+model SubjectTeacher {
+  id        String         @id @default(cuid())
+  sectionId String
+  section   Section        @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  subjectId String
+  subject   Subject        @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  teacherId String
+  teacher   TeacherProfile @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@unique([sectionId, subjectId, teacherId])
+}
+
+model AttendanceRecord {
+  id        String         @id @default(cuid())
+  date      DateTime
+  status    String         @default("PRESENT") // PRESENT, ABSENT, LATE, EXCUSED
+  remarks   String?
+  studentId String
+  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  sectionId String
+  section   Section        @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, date])
+}
+
+model ExamTerm {
+  id           String        @id @default(cuid())
+  name         String        // "Midterm Examination 2026", "Annual Final Exam 2026"
+  startDate    DateTime
+  endDate      DateTime
+  academicYear String        @default("2026-2027")
+  isPublished  Boolean       @default(false)
+
+  examSubjects ExamSubject[]
+}
+
+model ExamSubject {
+  id          String       @id @default(cuid())
+  examTermId  String
+  examTerm    ExamTerm     @relation(fields: [examTermId], references: [id], onDelete: Cascade)
+  subjectId   String
+  subject     Subject      @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  examDate    DateTime?
+  maxMarks    Float        @default(100)
+  passMarks   Float        @default(40)
+
+  marks       MarkRecord[]
+
+  @@unique([examTermId, subjectId])
+}
+
+model MarkRecord {
+  id            String         @id @default(cuid())
+  examSubjectId String
+  examSubject   ExamSubject    @relation(fields: [examSubjectId], references: [id], onDelete: Cascade)
+  studentId     String
+  student       StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  obtainedMarks Float
+  grade         String         // A+, A, B, C, D, F
+  gpa           Float          // 5.0 or 4.0 scale
+  remarks       String?
+
+  @@unique([examSubjectId, studentId])
+}
+
+model FeeHead {
+  id          String   @id @default(cuid())
+  title       String   // "Monthly Tuition Fee", "Lab Fee", "Admission Fee"
+  amount      Float
+  description String?
+}
+
+model FeeInvoice {
+  id            String       @id @default(cuid())
+  invoiceNumber String       @unique // INV-2026-0001
+  studentId     String
+  student       StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  title         String       // "Monthly Tuition - October 2026"
+  totalAmount   Float
+  paidAmount    Float        @default(0)
+  dueDate       DateTime
+  status        String       @default("UNPAID") // PAID, PARTIAL, UNPAID, OVERDUE
+  createdAt     DateTime     @default(now())
+
+  payments      FeePayment[]
+}
+
+model FeePayment {
+  id             String      @id @default(cuid())
+  receiptNumber  String      @unique // REC-2026-0001
+  invoiceId      String
+  invoice        FeeInvoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  amount         Float
+  paymentDate    DateTime    @default(now())
+  paymentMethod  String      @default("CASH") // CASH, BANK_TRANSFER, CHEQUE, ONLINE
+  transactionRef String?
+  notes          String?
+}
+
+model TimetableSlot {
+  id           String         @id @default(cuid())
+  dayOfWeek    String         // SUNDAY, MONDAY, TUESDAY, WEDNESDAY, THURSDAY
+  periodNumber Int            // 1, 2, 3, 4, 5, 6, 7
+  startTime    String         // "08:30"
+  endTime      String         // "09:15"
+  sectionId    String
+  section      Section        @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  subjectId    String
+  subject      Subject        @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  teacherId    String
+  teacher      TeacherProfile @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@unique([sectionId, dayOfWeek, periodNumber])
+}
+
+model Announcement {
+  id         String   @id @default(cuid())
+  title      String
+  content    String
+  category   String   @default("General") // Academic, Exam, Holiday, Sports, Fee
+  targetRole String   @default("ALL") // ALL, TEACHER, STUDENT, PARENT
+  authorId   String
+  author     User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model AdmissionInquiry {
+  id                String    @id @default(cuid())
+  applicationNumber String?   @unique // SIS-APP-2026-0001
+  studentName       String
+  gender            String
+  dateOfBirth       DateTime?
+  gradeApplying     String
+  parentName        String
+  parentEmail       String
+  parentPhone       String
+  previousSchool    String?
+  address           String?
+  documents         String?   // JSON or comma separated checklist of submitted docs
+  status            String    @default("PENDING") // PENDING, REVIEWED, APPROVED, REJECTED, ENROLLED
+  notes             String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  subject   String
+  message   String
+  status    String   @default("UNREAD") // UNREAD, READ, RESPONDED
+  notes     String?
+  createdAt DateTime @default(now())
+}
+
+model SchoolSetting {
+  id           String @id @default("default")
+  schoolName   String @default("SONARGAON INTERNATIONAL SCHOOL")
+  tagline      String @default("Building Character. Inspiring Excellence.")
+  email        String @default("admissions@sonargaon.edu.bd")
+  phone        String @default("+880 2 8876543")
+  address      String @default("Plot 14, Road 7, Sector 3, Uttara / Banani, Dhaka, Bangladesh")
+  academicYear String @default("2026-2027")
+  currency     String @default("৳")
+  timeZone     String @default("Asia/Dhaka")
+  country      String @default("Bangladesh")
+}
+
+// --- HOMEWORK & LMS ---
+model Assignment {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  dueDate     DateTime
+  totalMarks  Float    @default(100)
+  subjectId   String
+  subject     Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  sectionId   String
+  section     Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  teacherId   String
+  teacher     TeacherProfile @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  attachments String?
+  createdAt   DateTime @default(now())
+
+  submissions AssignmentSubmission[]
+}
+
+model AssignmentSubmission {
+  id           String     @id @default(cuid())
+  assignmentId String
+  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  studentId    String
+  student      StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  fileUrl      String?
+  textAnswer   String?
+  submittedAt  DateTime   @default(now())
+  status       String     @default("SUBMITTED") // SUBMITTED, REVIEWED, GRADED, RETURNED
+  marks        Float?
+  feedback     String?
+
+  @@unique([assignmentId, studentId])
+}
+
+model LearningMaterial {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  subjectId   String
+  subject     Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  sectionId   String?
+  section     Section? @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  fileUrl     String
+  fileType    String   @default("PDF") // PDF, DOC, VIDEO, LINK
+  chapter     String?
+  uploadedBy  String
+  createdAt   DateTime @default(now())
+}
+
+// --- LIBRARY MANAGEMENT ---
+model LibraryBook {
+  id              String        @id @default(cuid())
+  title           String
+  author          String
+  isbn            String        @unique
+  category        String        // Science, Mathematics, Literature, History
+  totalCopies     Int           @default(5)
+  availableCopies Int           @default(5)
+  rackNumber      String?
+  loans           LibraryLoan[]
+}
+
+model LibraryLoan {
+  id           String      @id @default(cuid())
+  bookId       String
+  book         LibraryBook @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  borrowerName String
+  borrowerId   String      // Student or Staff ID
+  issueDate    DateTime    @default(now())
+  dueDate      DateTime
+  returnDate   DateTime?
+  status       String      @default("ISSUED") // ISSUED, RETURNED, OVERDUE
+  fineAmount   Float       @default(0)
+}
+
+// --- TRANSPORT MANAGEMENT ---
+model TransportRoute {
+  id            String             @id @default(cuid())
+  routeName     String
+  vehicleNumber String
+  driverName    String
+  driverPhone   String
+  capacity      Int                @default(30)
+  monthlyFare   Float              @default(3500)
+  stops         TransportStop[]
+  passengers    StudentTransport[]
+}
+
+model TransportStop {
+  id         String         @id @default(cuid())
+  routeId    String
+  route      TransportRoute @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  stopName   String
+  pickupTime String
+  dropTime   String
+}
+
+model StudentTransport {
+  id        String         @id @default(cuid())
+  studentId String         @unique
+  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  routeId   String
+  route     TransportRoute @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  stopName  String
+  status    String         @default("ACTIVE") // ACTIVE, INACTIVE
+}
+
+// --- HR & PAYROLL MANAGEMENT ---
+model Department {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  headTeacher String?
+}
+
+model StaffLeave {
+  id         String   @id @default(cuid())
+  userId     String
+  userName   String
+  leaveType  String   // CASUAL, SICK, ANNUAL, MATERNITY
+  startDate  DateTime
+  endDate    DateTime
+  reason     String
+  status     String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  approvedBy String?
+  createdAt  DateTime @default(now())
+}
+
+model PayrollRecord {
+  id            String   @id @default(cuid())
+  userId        String
+  employeeName  String
+  employeeId    String
+  designation   String
+  monthYear     String   // "October 2026"
+  basicSalary   Float
+  allowances    Float    @default(0)
+  deductions    Float    @default(0)
+  netSalary     Float
+  paymentDate   DateTime @default(now())
+  paymentMethod String   @default("BANK_TRANSFER")
+  status        String   @default("PAID") // PAID, PENDING
+  payslipNumber String   @unique // PAY-2026-1001
+}
+
+// --- INVENTORY MANAGEMENT ---
+model InventoryItem {
+  id           String                 @id @default(cuid())
+  itemName     String
+  category     String                 // LAB_EQUIPMENT, SPORTS, IT_HARDWARE, STATIONERY
+  quantity     Int                    @default(0)
+  unit         String                 @default("Units")
+  unitPrice    Float                  @default(0)
+  location     String?
+  status       String                 @default("IN_STOCK") // IN_STOCK, LOW_STOCK, OUT_OF_STOCK
+  transactions InventoryTransaction[]
+}
+
+model InventoryTransaction {
+  id              String        @id @default(cuid())
+  itemId          String
+  item            InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  transactionType String        // PURCHASE, ISSUE, RETURN, SCRAP
+  quantity        Int
+  transactionDate DateTime      @default(now())
+  recordedBy      String
+  notes           String?
+}
+
+// --- NOTIFICATIONS, AUDIT & CMS ---
+model InAppNotification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      String   @default("SYSTEM") // ATTENDANCE, EXAM, FEE, ASSIGNMENT, SYSTEM
+  isRead    Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  userName  String?
+  action    String
+  module    String
+  details   String
+  ipAddress String?  @default("127.0.0.1")
+  createdAt DateTime @default(now())
+}
+
+model WebsiteCMS {
+  id          String   @id @default(cuid())
+  sectionKey  String   @unique
+  title       String
+  subtitle    String?
+  content     String
+  imageUrl    String?
+  isPublished Boolean  @default(true)
+  updatedAt   DateTime @updatedAt
+}
