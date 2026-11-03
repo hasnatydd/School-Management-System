@@ -1,6 +1,6 @@
 # Sonargaon International School Management System (ERP)
 
-> **"Building Character. Inspiring Excellent."**  
+> **"Building Character. InspiringExcellence."**  
 > An enterprise-grade, comprehensive K-12 School Management & Enterprise Resource Planning (ERP) platform tailored for institutional excellence in Bangladesh with Cambridge International & National curriculum compatibility.
 
 ---
