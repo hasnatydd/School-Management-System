@@ -1,4 +1,9 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {};
+const nextConfig = {
+  outputFileTracingIncludes: {
+    '/*': ['./prisma/**/*'],
+    '/**/*': ['./prisma/**/*'],
+  },
+};
 
 export default nextConfig;
