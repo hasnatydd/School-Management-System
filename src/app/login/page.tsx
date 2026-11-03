@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Lock, User, ArrowRight, AlertCircle, Sparkles, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { Lock, User, ArrowRight, AlertCircle, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
 export default function LoginPage() {
@@ -36,12 +36,6 @@ export default function LoginPage() {
       setError(err?.message || 'Failed to sign in. Please try again.');
       setLoading(false);
     }
-  };
-
-  const handleDemoFill = (id: string, pass: string) => {
-    setIdentifier(id);
-    setPassword(pass);
-    setError('');
   };
 
   return (
@@ -141,63 +135,6 @@ export default function LoginPage() {
               </button>
             </div>
           </form>
-
-          {/* Quick Demo Access Pills */}
-          <div className="mt-6 border-t border-slate-200 pt-5">
-            <div className="flex items-center gap-1.5 text-[10px] font-heading font-bold text-steelGrey uppercase tracking-wider mb-2.5">
-              <Sparkles className="w-3.5 h-3.5 text-antiqueGold" />
-              One-Click Demonstration Logins
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <button
-                type="button"
-                onClick={() => handleDemoFill('admin', 'admin123')}
-                className="flex items-center justify-between p-2.5 rounded-lg border border-slate-200 bg-warmIvory/60 hover:bg-warmIvory hover:border-antiqueGold/40 text-left transition group"
-              >
-                <div>
-                  <div className="font-heading font-bold text-midnight group-hover:text-antiqueGold transition">Super Admin</div>
-                  <div className="text-[10px] text-steelGrey">Dr. Mansur Ali</div>
-                </div>
-                <CheckCircle2 className="w-3.5 h-3.5 text-slate-400 group-hover:text-antiqueGold" />
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleDemoFill('teacher@sonargaon.edu.bd', 'teacher123')}
-                className="flex items-center justify-between p-2.5 rounded-lg border border-slate-200 bg-warmIvory/60 hover:bg-warmIvory hover:border-antiqueGold/40 text-left transition group"
-              >
-                <div>
-                  <div className="font-heading font-bold text-midnight group-hover:text-antiqueGold transition">Faculty Lead</div>
-                  <div className="text-[10px] text-steelGrey">Kazi Farhana (Math)</div>
-                </div>
-                <CheckCircle2 className="w-3.5 h-3.5 text-slate-400 group-hover:text-antiqueGold" />
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleDemoFill('STU-2026-001', 'student123')}
-                className="flex items-center justify-between p-2.5 rounded-lg border border-slate-200 bg-warmIvory/60 hover:bg-warmIvory hover:border-antiqueGold/40 text-left transition group"
-              >
-                <div>
-                  <div className="font-heading font-bold text-midnight group-hover:text-antiqueGold transition">Scholar</div>
-                  <div className="text-[10px] text-steelGrey">Tahmid (Grade 10)</div>
-                </div>
-                <CheckCircle2 className="w-3.5 h-3.5 text-slate-400 group-hover:text-antiqueGold" />
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleDemoFill('PRN-001', 'parent123')}
-                className="flex items-center justify-between p-2.5 rounded-lg border border-slate-200 bg-warmIvory/60 hover:bg-warmIvory hover:border-antiqueGold/40 text-left transition group"
-              >
-                <div>
-                  <div className="font-heading font-bold text-midnight group-hover:text-antiqueGold transition">Guardian</div>
-                  <div className="text-[10px] text-steelGrey">Tareq Mahmud</div>
-                </div>
-                <CheckCircle2 className="w-3.5 h-3.5 text-slate-400 group-hover:text-antiqueGold" />
-              </button>
-            </div>
-          </div>
         </div>
 
         <p className="mt-4 text-center text-[11px] text-slate-400 font-sans">
