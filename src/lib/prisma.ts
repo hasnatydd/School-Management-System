@@ -1,10 +1,16 @@
 import { PrismaClient } from '@prisma/client';
+import { getDatabaseUrl } from './init-db';
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
 export const prisma =
   globalForPrisma.prisma ||
   new PrismaClient({
+    datasources: {
+      db: {
+        url: getDatabaseUrl(),
+      },
+    },
     log: ['error'],
   });
 

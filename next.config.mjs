@@ -1,8 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  outputFileTracingIncludes: {
-    '/*': ['./prisma/**/*'],
-    '/**/*': ['./prisma/**/*'],
+  experimental: {
+    outputFileTracingIncludes: {
+      '/**': ['./prisma/**/*'],
+    },
   },
 };
 
